@@ -1,7 +1,116 @@
 <html>
-<head><title>test</title></head>
+<!-- gallery template src : https://codepen.io/rperry1886/pen/KKwbQNP -->
+<head>
+	<meta charset="UTF-8">
+	<style>
+		body {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			flex-direction: column;
+			font-family: sans-serif;
+		}
+
+		h1 {
+			color: coral;
+			text-align: center;
+		}
+
+		h2 {
+			color: navy;
+			text-align: center;
+		}
+
+		input {
+			width: 100px; 
+			margin: 0 auto;
+		}
+
+		form {
+			text-align: center;
+		}
+
+		.grid-container {
+			columns: 5 200px;
+			column-gap: 1.5rem;
+			width: 90%;
+			margin: 0 auto;
+		}
+		.grid-container div {
+			width: 150px;
+			margin: 0 1.5rem 1.5rem 0;
+			display: inline-block;
+			width: 100%;
+			border: solid 2px black;
+			padding: 5px;
+		 	box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.5);
+		  	border-radius: 5px;
+		  	transition: all 0.25s ease-in-out;
+		}
+
+		.grid-container div:hover img {
+		  	filter: grayscale(0);
+		}
+
+		.grid-container div:hover {
+		  	border-color: coral;
+		}
+		.grid-container div img {
+		  	width: 100%;
+		  	filter: grayscale(100%);
+		  	border-radius: 5px;
+		  	transition: all 0.25s ease-in-out;
+		}
+
+		.grid-container video {
+			width: 100%;
+		}
+
+		.grid-container div p {
+		  	margin: 5px 0;
+		  	padding: 0;
+		  	text-align: center;
+		  	font-style: italic;
+		}	
+</style>
+	<title>Tiny Webserver</title>
+</head>
 <body> 
-<img align="middle" src="godzilla.gif">
-Dave O'Hallaron
+	<h1>Tiny Webserver Gallery Demo</h1>
+		<div class="grid-container">
+  			<div>
+    			<img class='grid-item grid-item-1' src='mokoko_full.gif' alt=''>
+    			<p>"꺼억콩"</p>
+  			</div>
+  			<div>
+    			<img class='grid-item grid-item-2' src='mokoko_gratitude.gif' alt=''>
+    			<p>"감사콩"</p>
+  			</div>
+			<div>
+			    <img class='grid-item grid-item-3' src='mokoko_panic.gif' alt=''>
+			    <p>"앗콩"</p>
+			</div>
+			<div>
+			    <img class='grid-item grid-item-4' src='mokoko_wasted.gif' alt=''>
+			    <p>"태웠다콩"</p>
+			</div>
+			<div>
+				<video class='grid-item grid-item-5' controls>
+					<!-- <source src="thumbs_up.mpeg" type="video/mpeg" alt='video format not supported'> -->
+					<source src="thumbs_up.mp4" type="video/mp4">
+				</video>
+			    <p>"[11.7] 굳"</p>
+			 </div>
+			<div>
+				<!-- [11.10] using HTML form to link cgi -->
+				<h2>Tiny Webserver Adder Demo</h2>
+				<!-- sample uri : [dns:port/dir]/11-10-adder?value_1=1&value_2=2-->
+				<form action="/cgi-bin/11-10-adder"method="GET">
+					<p>Integer Value 1: <input type="text" name="value_1"/></p>
+					<p>Integer Value 2: <input type="text" name="value_2"/></p>
+					<input type="submit" value="Submit"/>
+				</form>
+			</div>
+</div>
 </body>
 </html>

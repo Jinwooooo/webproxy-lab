@@ -924,8 +924,11 @@ ssize_t Rio_readlineb(rio_t *rp, void *usrbuf, size_t maxlen)
  */
 /* $begin open_clientfd */
 int open_clientfd(char *hostname, char *port) {
-    int clientfd, rc;
-    struct addrinfo hints, *listp, *p;
+    int clientfd;
+    int rc;
+    struct addrinfo hints; 
+    struct addrinfo *listp;
+    struct addrinfo *p;
 
     /* Get a list of potential server addresses */
     memset(&hints, 0, sizeof(struct addrinfo));
@@ -970,10 +973,13 @@ int open_clientfd(char *hostname, char *port) {
  *       -1 with errno set for other errors.
  */
 /* $begin open_listenfd */
-int open_listenfd(char *port) 
-{
-    struct addrinfo hints, *listp, *p;
-    int listenfd, rc, optval=1;
+int open_listenfd(char *port) {
+    struct addrinfo hints; 
+    struct addrinfo *listp;
+    struct addrinfo *p;
+    int listenfd;
+    int rc;
+    int optval = 1;
 
     /* Get a list of potential server addresses */
     memset(&hints, 0, sizeof(struct addrinfo));
