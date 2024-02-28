@@ -1,5 +1,6 @@
 #include "csapp.h"
 
+/***** FUNCTION DECLARATION *****/
 void doit(int fd);
 void read_request_hdr(rio_t *rp);
 int parse_uri(char *uri, char *filename, char *cgi_args);
@@ -10,9 +11,7 @@ void serve_static(int fd, char *filename, int file_size, char *method);
 // void serve_dynamic(int fd, char *filename, char *cgi_args);
 void serve_dynamic(int fd, char *filename, char *cgi_args, char *method);
 void client_error(int fd, char *cause, char *err_no, char *short_msg, char *long_msg);
-
-// [concurrency]
-void *thread(void *vargp);
+void *thread(void *vargp); // [concurrency]
 
 // argv[0] = executable ; argv[1] = port_no
 int main(int argc, char **argv) {
@@ -25,7 +24,7 @@ int main(int argc, char **argv) {
     socklen_t client_buffer_size;
 
     // [concurrency]
-    pthread_t tid;
+    pthread_t thread_id;
 
     if(argc != 2) {
         fprintf(stderr, "usage: %s <port>\n", argv[0]);
@@ -43,7 +42,7 @@ int main(int argc, char **argv) {
         Getnameinfo((SA *)&client_address, client_buffer_size, hostname, MAXLINE, port, MAXLINE, 0);
         printf("Accepted connection from (%s, %s)\n", hostname, port);
 
-        Pthread_create(&tid, NULL, thread, connect_fd_ptr);   
+        Pthread_create(&thread_id, NULL, thread, connect_fd_ptr);   
 
         // [legacy] sequential
         // client_buffer_size = sizeof(client_address);

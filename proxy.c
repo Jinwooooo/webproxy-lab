@@ -9,9 +9,7 @@ void doit(int connect_fd);
 void generate_http_hdr(char *http_hdr, char *hostname, char *path, int port, rio_t *client_rio);
 void parse_uri(char *uri, char *hostname, char *path, int *port);
 int connect_end_server(char *hostname, char *http_header, int port);
-
-// [concurrency]
-void *thread(void *vargp);
+void *thread(void *vargp); // [concurrency]
 
 static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 Firefox/10.0.3\r\n";
 
@@ -26,8 +24,8 @@ int main(int argc, char **argv) {
     socklen_t client_buffer_size;
     
     // [concurrency]
-    pthread_t tid;
-    
+    pthread_t thread_id;
+
     if(argc != 2){
         fprintf(stderr,"usage :%s <port> \n",argv[0]);
         exit(1);
@@ -44,7 +42,7 @@ int main(int argc, char **argv) {
         Getnameinfo((SA *)&client_address, client_buffer_size, hostname, MAXLINE, port, MAXLINE, 0);
         printf("Accepted connection from (%s, %s)\n", hostname, port);
 
-        Pthread_create(&tid, NULL, thread, connect_fd_ptr); 
+        Pthread_create(&thread_id, NULL, thread, connect_fd_ptr); 
 
         // [legacy] sequential
         // client_buffer_size = sizeof(client_address);
