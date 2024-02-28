@@ -11,13 +11,21 @@ void serve_static(int fd, char *filename, int file_size, char *method);
 void serve_dynamic(int fd, char *filename, char *cgi_args, char *method);
 void client_error(int fd, char *cause, char *err_no, char *short_msg, char *long_msg);
 
+// [concurrency]
+void *thread(void *vargp);
+
+// argv[0] = executable ; argv[1] = port_no
 int main(int argc, char **argv) {
     int listen_fd;
-    int connect_fd;
+    // int connect_fd;
+    int *connect_fd_ptr; // [concurrency]
     char hostname[MAXLINE];
     char port[MAXLINE];
     struct sockaddr_storage client_address;
     socklen_t client_buffer_size;
+
+    // [concurrency]
+    pthread_t tid;
 
     if(argc != 2) {
         fprintf(stderr, "usage: %s <port>\n", argv[0]);
@@ -25,13 +33,25 @@ int main(int argc, char **argv) {
     }
 
     listen_fd = Open_listenfd(argv[1]);
+    // everytime client calls -> generate new socket
     while(1) {
+        // [concurrency]
         client_buffer_size = sizeof(client_address);
-        connect_fd = Accept(listen_fd, (SA *)&client_address, &client_buffer_size);
+        connect_fd_ptr = Malloc(sizeof(int));
+        *connect_fd_ptr = Accept(listen_fd, (SA *)&client_address, &client_buffer_size);
+
         Getnameinfo((SA *)&client_address, client_buffer_size, hostname, MAXLINE, port, MAXLINE, 0);
         printf("Accepted connection from (%s, %s)\n", hostname, port);
-        doit(connect_fd);
-        Close(connect_fd);
+
+        Pthread_create(&tid, NULL, thread, connect_fd_ptr);   
+
+        // [legacy] sequential
+        // client_buffer_size = sizeof(client_address);
+        // connect_fd = Accept(listen_fd, (SA *)&client_address, &client_buffer_size);
+        // Getnameinfo((SA *)&client_address, client_buffer_size, hostname, MAXLINE, port, MAXLINE, 0);
+        // printf("Accepted connection from (%s, %s)\n", hostname, port);
+        // doit(connect_fd);
+        // Close(connect_fd);
     }
 }
 
@@ -49,9 +69,10 @@ void doit(int fd) {
     Rio_readinitb(&rio, fd);
     if(!Rio_readlineb(&rio, buffer, MAXLINE))
         return;
-    // [11.6C] prints the HTTP version 
     printf("%s", buffer);
     sscanf(buffer, "%s %s %s", method, uri, version);
+    // Tiny will only allow GET and HEAD methods
+    // [11.11] support http head method
     if(!(strcasecmp(method, "GET") == 0 || strcasecmp(method, "HEAD") == 0)) {
         client_error(fd, method, "501", "Not Implemented", "Tiny does not implement this method");
         return;
@@ -170,13 +191,13 @@ void serve_dynamic(int fd, char *filename, char *cgi_args, char *method) {
     sprintf(buffer, "Server: Tiny Web Server\r\n");
     Rio_writen(fd, buffer, strlen(buffer));
   
-    if(Fork() == 0) {
+    if(Fork() == 0) {                           // generate child and run if generated
         setenv("QUERY_STRING", cgi_args, 1);
         setenv("REQUEST_METHOD", method, 1);
-        Dup2(fd, STDOUT_FILENO);
-        Execve(filename, empty_list, environ);
+        Dup2(fd, STDOUT_FILENO);                // get CGI output -> server socket -> client 
+        Execve(filename, empty_list, environ);  // run CGI
     }
-    Wait(NULL);
+    Wait(NULL);                                 // wait until reap ded child
 }
 
 void client_error(int fd, char *cause, char *err_no, char *short_msg, char *long_msg) {
@@ -199,5 +220,15 @@ void client_error(int fd, char *cause, char *err_no, char *short_msg, char *long
     Rio_writen(fd, buffer, strlen(buffer));
 }
 
+// [concurrency]
+void *thread(void *vargp){
+    int connect_fd = *((int *)vargp);
 
+    Pthread_detach(pthread_self());
+    Free(vargp);
+    doit(connect_fd);
+    Close(connect_fd);
+
+    return NULL;
+}
 

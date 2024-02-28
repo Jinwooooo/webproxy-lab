@@ -10,15 +10,23 @@ void generate_http_hdr(char *http_hdr, char *hostname, char *path, int port, rio
 void parse_uri(char *uri, char *hostname, char *path, int *port);
 int connect_end_server(char *hostname, char *http_header, int port);
 
+// [concurrency]
+void *thread(void *vargp);
+
 static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 Firefox/10.0.3\r\n";
 
+// argv[0] = executable ; argv[1] = port_no
 int main(int argc, char **argv) {
     int listen_fd;
-    int connect_fd;
+    // int connect_fd;
+    int *connect_fd_ptr; // [concurrency]
     char hostname[MAXLINE];
     char port[MAXLINE];
     struct sockaddr_storage client_address;
     socklen_t client_buffer_size;
+    
+    // [concurrency]
+    pthread_t tid;
     
     if(argc != 2){
         fprintf(stderr,"usage :%s <port> \n",argv[0]);
@@ -26,13 +34,25 @@ int main(int argc, char **argv) {
     }
 
     listen_fd = Open_listenfd(argv[1]);
+    // everytime client calls -> generate new socket
     while(1) {
+        // [concurrency]
         client_buffer_size = sizeof(client_address);
-        connect_fd = Accept(listen_fd,(SA *)&client_address,&client_buffer_size);
-        Getnameinfo((SA*)&client_address,client_buffer_size,hostname,MAXLINE,port,MAXLINE,0);
-        printf("Accepted connection from (%s %s).\n",hostname,port);
-        doit(connect_fd);
-        Close(connect_fd);
+        connect_fd_ptr = Malloc(sizeof(int));
+        *connect_fd_ptr = Accept(listen_fd, (SA *)&client_address, &client_buffer_size);
+
+        Getnameinfo((SA *)&client_address, client_buffer_size, hostname, MAXLINE, port, MAXLINE, 0);
+        printf("Accepted connection from (%s, %s)\n", hostname, port);
+
+        Pthread_create(&tid, NULL, thread, connect_fd_ptr); 
+
+        // [legacy] sequential
+        // client_buffer_size = sizeof(client_address);
+        // connect_fd = Accept(listen_fd,(SA *)&client_address, &client_buffer_size);
+        // Getnameinfo((SA*)&client_address, client_buffer_size, hostname, MAXLINE, port, MAXLINE, 0);
+        // printf("Accepted connection from (%s %s).\n", hostname, port);
+        // doit(connect_fd);
+        // Close(connect_fd);
     }
 
     return 0;
@@ -45,7 +65,7 @@ void doit(int connect_fd) {
     char method[MAXLINE];
     char uri[MAXLINE];
     char version[MAXLINE];
-    char end_server_http_hdr [MAXLINE];
+    char end_server_http_hdr[MAXLINE];
     char hostname[MAXLINE];
     char path[MAXLINE];
     rio_t client_rio;
@@ -148,4 +168,16 @@ int connect_end_server(char *hostname, char *http_header, int port) {
     sprintf(port_value, "%d", port);
     
     return Open_clientfd(hostname, port_value);
+}
+
+// [concurrency]
+void *thread(void *vargp){
+    int connect_fd = *((int *)vargp);
+
+    Pthread_detach(pthread_self());
+    Free(vargp);
+    doit(connect_fd);
+    Close(connect_fd);
+
+    return NULL;
 }
